@@ -448,7 +448,9 @@ _PySys_ClearAuditHooks(PyThreadState *ts)
     runtime->audit_hooks.head = NULL;
     while (e) {
         n = e->next;
-        PyMem_RawFree(e);
+        /* gh-161407: paired with the default raw allocator in
+           PySys_AddAuditHook(), which is stable across PYTHONMALLOC. */
+        _PyMem_DefaultRawFree(e);
         e = n;
     }
 }
@@ -496,7 +498,10 @@ PySys_AddAuditHook(Py_AuditHookFunction hook, void *userData)
         }
     }
 
-    _Py_AuditHookEntry *e = (_Py_AuditHookEntry*)PyMem_RawMalloc(
+    /* gh-161407: PyMem_RawMalloc() changes when PYTHONMALLOC or the
+       debug allocator is installed at startup. Hooks added before
+       Py_Initialize() must be freed with the allocator that created them. */
+    _Py_AuditHookEntry *e = (_Py_AuditHookEntry *)_PyMem_DefaultRawMalloc(
             sizeof(_Py_AuditHookEntry));
     if (!e) {
         if (tstate != NULL) {

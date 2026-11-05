@@ -1,0 +1,4 @@
+Audit hooks added with :c:func:`PySys_AddAuditHook` before
+:c:func:`Py_Initialize` are now released with the default raw allocator.
+They could crash at shutdown when ``PYTHONMALLOC`` or ``-X dev`` had
+replaced the raw allocator.
